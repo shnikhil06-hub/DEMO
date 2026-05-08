@@ -49,14 +49,14 @@ export function AddContactModal({ isOpen, onClose, onSave }) {
           >Cancel</button>
           <button 
             onClick={() => {
-              if (name.trim()) {
+              if (name.trim() && phone.trim()) {
                 onSave(name.trim(), phone.trim());
                 setName("");
                 setPhone("");
               }
             }}
-            disabled={!name.trim()}
-            style={{ flex: 1, padding: "12px", borderRadius: 8, border: "none", background: name.trim() ? COLORS.blue : COLORS.textDim, color: "#fff", fontWeight: 600, cursor: name.trim() ? "pointer" : "not-allowed" }}
+            disabled={!name.trim() && !phone.trim()}
+            style={{ flex: 1, padding: "12px", borderRadius: 8, border: "none", background: name.trim() && phone.trim() ? COLORS.blue : COLORS.textDim, color: "#fff", fontWeight: 600, cursor: name.trim() && phone.trim() ? "pointer" : "not-allowed" }}
           >Save</button>
         </div>
       </div>

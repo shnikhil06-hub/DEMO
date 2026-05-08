@@ -1,13 +1,13 @@
 import { useState } from "react";
-import { COLORS, CONTACTS as initialContacts } from "./constants";
-import { BottomNav } from "./components/BottomNav";
-import { HomeScreen } from "./screens/HomeScreen";
-import { LendScreen } from "./screens/LendScreen";
-import { SplitScreen } from "./screens/SplitScreen";
-import { ScanScreen } from "./screens/ScanScreen";
-import { RequestScreen } from "./screens/RequestScreen";
-import { ProfileScreen } from "./screens/ProfileScreen";
-import { PhoneLayout } from "./components/PhoneLayout";
+import { COLORS, CONTACTS as initialContacts } from "../constants";
+import { BottomNav } from "../components/BottomNav";
+import { HomeScreen } from "./HomeScreen";
+import { LendScreen } from "./LendScreen";
+import { SplitScreen } from "./SplitScreen";
+import { ScanScreen } from "./ScanScreen";
+import { RequestScreen } from "./RequestScreen";
+import { ProfileScreen } from "./ProfileScreen";
+import { PhoneLayout } from "../components/PhoneLayout";
 
 export default function App() {
   const [screen, setScreen] = useState("home");

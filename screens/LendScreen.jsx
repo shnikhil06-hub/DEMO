@@ -24,7 +24,7 @@ export function LendScreen({ onNav, appState, appActions }) {
       <div style={{ textAlign: "center", marginBottom: 32 }}>
         <div style={{ fontSize: 64, marginBottom: 16 }}>✓</div>
         <h2 style={{ color: COLORS.text, fontSize: 22, fontWeight: 800, margin: "0 0 8px" }}>Money Sent!</h2>
-        <p style={{ color: COLORS.textMuted, fontSize: 14 }}>You sent ₹{amount} to {contact?.full}. An auto-pay mandate is active.</p>
+        <p style={{ color: COLORS.textMuted, fontSize: 14 }}>You sent ₹{amount} to {contact ? contact.full : undefined}. An auto-pay mandate is active.</p>
       </div>
       <div style={{ background: COLORS.card, borderRadius: 16, padding: 20, width: "100%", maxWidth: 360, border: `1px solid ${COLORS.border}` }}>
         {[
