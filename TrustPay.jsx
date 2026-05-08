@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { COLORS } from "./constants";
+import { COLORS, CONTACTS as initialContacts } from "./constants";
 import { BottomNav } from "./components/BottomNav";
 import { HomeScreen } from "./screens/HomeScreen";
 import { LendScreen } from "./screens/LendScreen";
@@ -16,65 +16,63 @@ export default function App() {
 
   const handleNav = (s) => setScreen(s);
 
-  const [owed, setOwed] = useState(4500);
-  const [owe, setOwe] = useState(1200);
+  const [owed, setOwed] = useState(0);
+  const [owe, setOwe] = useState(0);
+  const [contacts, setContacts] = useState(initialContacts);
 
-  const [activeLoans, setActiveLoans] = useState([
-    { id: "RK", name: "Rahul Kumar", sub: "Concert tickets", amount: "₹2,500", badge: "3d left", badgeColor: COLORS.blue, progress: 0.6 },
-    { id: "PS", name: "Priya Sharma", sub: "Lunch split", amount: "₹800", badge: "Due today", badgeColor: COLORS.orange, progress: 0.95 },
-    { id: "AM", name: "Aman Mehra", sub: "Goa trip", amount: "₹1,200", badge: "Auto-debit", badgeColor: COLORS.accent, progress: 0.4, extra: "⚡ Auto-debit processing from Aman's UPI" },
-  ]);
+  const onAddContact = (name, phone) => {
+    if (!name) return null;
+    const newId = name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase() || "NN";
+    const colors = ["#f43f5e", "#8b5cf6", "#14b8a6", "#f59e0b", "#3b82f6", "#ec4899"];
+    const color = colors[contacts.length % colors.length];
+    const newContact = { id: newId, name: name.split(" ")[0], full: name, phone: phone || "", color };
+    setContacts(prev => [...prev, newContact]);
+    return newContact;
+  };
+  const [activeLoans, setActiveLoans] = useState([]);
+  const [recentActivity, setRecentActivity] = useState([]);
+  const [splitGroups, setSplitGroups] = useState([]);
 
-  const [recentActivity, setRecentActivity] = useState([
-    { id: "NK", name: "Nikhil K.", sub: "✅ Repaid you · 2h ago", amount: "+₹500", color: COLORS.green, bg: "#10b981" },
-    { id: "BB", name: "BigBazaar", sub: "🛒 UPI Payment · Yesterday", amount: "-₹890", color: COLORS.red, bg: "#6366f1" },
-    { id: "SR", name: "Sanya Rathi", sub: "↑ You lent · Apr 28", amount: "-₹450", color: COLORS.red, bg: "#8b5cf6" },
-    { id: "KM", name: "Karan Mehta", sub: "⚡ Auto-deducted · Apr 26", amount: "-₹750", color: COLORS.red, bg: "#ef4444" },
-  ]);
-
-  const [splitGroups, setSplitGroups] = useState([
-    { name: "Goa Trip 🏖", members: 4, expenses: 6, total: "₹12,400", share: "₹3,100", status: "Active", ids: ["RK", "PS", "AM", "SR"] },
-    { name: "Office Lunch 🍱", members: 3, expenses: 3, total: "₹1,800", share: "₹600", status: "Active", ids: ["RK", "SR", "KM"] },
-    { name: "Hostel Room 🏠", members: 6, expenses: 14, total: "₹8,200", share: "₹1,366", status: "Settled", ids: ["PS", "AM"] },
-  ]);
-
-  const onLend = (contact, amount, purpose) => {
+  const onLend = (contact, amount, purpose, tenure = 7) => {
     setOwed(prev => prev + Number(amount));
     setActiveLoans(prev => [{
-      id: contact.id, name: contact.name, sub: purpose || "Lent money", amount: `₹${amount}`, badge: "Just now", badgeColor: COLORS.blue, progress: 0
+      id: contact.id, name: contact.name, sub: purpose || "Lent money", amount: `₹${amount}`, badge: "Just now", badgeColor: COLORS.blue, progress: 0, type: "lent", tenure
     }, ...prev]);
     setRecentActivity(prev => [{
       id: contact.id, name: contact.name, sub: "↑ You lent · Just now", amount: `-₹${amount}`, color: COLORS.red, bg: contact.color || COLORS.blue
     }, ...prev]);
   };
 
-  const onSplit = (group) => {
+  const onSplit = (group, owedAmt = 0) => {
     setSplitGroups(prev => [group, ...prev]);
+    if (owedAmt > 0) {
+      setOwed(prev => prev + owedAmt);
+    }
     setRecentActivity(prev => [{
       id: "RL", name: group.name, sub: `⤨ Created Split · Just now`, amount: group.total, color: COLORS.text, bg: COLORS.blue
     }, ...prev]);
   };
 
-  const onRequest = (contact, amount, purpose) => {
+  const onRequest = (contact, amount, purpose, tenure = 7) => {
     setOwe(prev => prev + Number(amount));
     setActiveLoans(prev => [{
-      id: contact.id, name: contact.name, sub: purpose || "Borrowed money", amount: `₹${amount}`, badge: "To Repay", badgeColor: COLORS.orange, progress: 0
+      id: contact.id, name: contact.name, sub: purpose || "Borrowed money", amount: `₹${amount}`, badge: "To Repay", badgeColor: COLORS.orange, progress: 0, type: "borrowed", tenure
     }, ...prev]);
     setRecentActivity(prev => [{
       id: contact.id, name: contact.name, sub: `↓ Borrowed ${purpose ? `for ${purpose}` : ''} · Just now`, amount: `+₹${amount}`, color: COLORS.text, bg: contact.color || COLORS.blue
     }, ...prev]);
   };
 
-  const appState = { owed, owe, activeLoans, recentActivity, splitGroups };
-  const appActions = { onLend, onSplit, onRequest };
+  const appState = { owed, owe, activeLoans, recentActivity, splitGroups, contacts };
+  const appActions = { onLend, onSplit, onRequest, onAddContact };
 
   return (
     <PhoneLayout bottomNav={<BottomNav active={activeTab} onNav={handleNav} />}>
       {screen === "home" && <HomeScreen onNav={handleNav} appState={appState} />}
-      {screen === "lend" && <LendScreen onNav={handleNav} appActions={appActions} />}
+      {screen === "lend" && <LendScreen onNav={handleNav} appState={appState} appActions={appActions} />}
       {screen === "split" && <SplitScreen onNav={handleNav} appState={appState} appActions={appActions} />}
       {screen === "scan" && <ScanScreen onNav={handleNav} />}
-      {screen === "request" && <RequestScreen onNav={handleNav} appActions={appActions} />}
+      {screen === "request" && <RequestScreen onNav={handleNav} appState={appState} appActions={appActions} />}
       {screen === "profile" && <ProfileScreen />}
     </PhoneLayout>
   );

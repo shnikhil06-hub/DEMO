@@ -1,14 +1,16 @@
 import React, { useState } from 'react';
-import { COLORS, CONTACTS } from '../constants';
+import { COLORS } from '../constants';
+import { AddContactModal } from '../components/AddContactModal';
 import { Avatar } from '../components/Avatar';
 import { StatusBar } from '../components/StatusBar';
 
 export function SplitScreen({ onNav, appState, appActions }) {
-  const { splitGroups } = appState;
+  const { splitGroups, contacts } = appState;
   const [showForm, setShowForm] = useState(false);
   const [purpose, setPurpose] = useState("");
   const [amount, setAmount] = useState("");
-  const [selectedContacts, setSelectedContacts] = useState(["RK"]);
+  const [selectedContacts, setSelectedContacts] = useState(["RK", "PS"]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [splitType, setSplitType] = useState("equal");
 
   const toggleContact = (id) => {
@@ -18,16 +20,18 @@ export function SplitScreen({ onNav, appState, appActions }) {
 
   const handleCreate = () => {
     if (!purpose || !amount || selectedContacts.length < 2) return;
+    const shareAmt = Math.round(Number(amount) / selectedContacts.length);
+    const owedAmt = Number(amount) - shareAmt;
     const group = {
       name: purpose,
       members: selectedContacts.length,
       expenses: 1,
       total: `₹${amount}`,
-      share: `₹${Math.round(Number(amount) / selectedContacts.length)}`,
+      share: `₹${shareAmt}`,
       status: "Active",
       ids: selectedContacts.slice(0, 4)
     };
-    appActions.onSplit(group);
+    appActions.onSplit(group, owedAmt);
     setShowForm(false);
     setPurpose("");
     setAmount("");
@@ -77,10 +81,10 @@ export function SplitScreen({ onNav, appState, appActions }) {
 
             <p style={{ color: COLORS.textMuted, fontSize: 12, margin: "0 0 6px" }}>Split With (Tap to select)</p>
             <div style={{ display: "flex", gap: 10, overflowX: "auto", paddingBottom: 8, marginBottom: 12 }} className="hide-scroll">
-              {CONTACTS.filter(c => c.id !== "RK").map(c => (
+              {contacts.filter(c => c.id !== "RK").map(c => (
                 <div key={c.id} onClick={() => toggleContact(c.id)} style={{
                   display: "flex", flexDirection: "column", alignItems: "center", gap: 4, cursor: "pointer",
-                  opacity: selectedContacts.includes(c.id) ? 1 : 0.4
+                  opacity: selectedContacts.includes(c.id) ? 1 : 0.4, flexShrink: 0
                 }}>
                   <div style={{
                     border: selectedContacts.includes(c.id) ? `2px solid ${COLORS.blue}` : "2px solid transparent",
@@ -91,7 +95,29 @@ export function SplitScreen({ onNav, appState, appActions }) {
                   <span style={{ fontSize: 10, color: COLORS.text, fontWeight: 600 }}>{c.name.split(" ")[0]}</span>
                 </div>
               ))}
+              <div onClick={() => setIsModalOpen(true)} style={{
+                display: "flex", flexDirection: "column", alignItems: "center", gap: 4, cursor: "pointer", flexShrink: 0
+              }}>
+                <div style={{ border: "2px solid transparent", borderRadius: "50%", padding: 2 }}>
+                  <div style={{
+                    width: 40, height: 40, borderRadius: "50%", background: COLORS.border,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    fontSize: 20, color: COLORS.textMuted,
+                  }}>+</div>
+                </div>
+                <span style={{ fontSize: 10, color: COLORS.textMuted, fontWeight: 600 }}>Add</span>
+              </div>
             </div>
+
+            <AddContactModal 
+              isOpen={isModalOpen} 
+              onClose={() => setIsModalOpen(false)} 
+              onSave={(name, phone) => {
+                const newC = appActions.onAddContact(name, phone);
+                if (newC) setSelectedContacts(prev => [...prev, newC.id]);
+                setIsModalOpen(false);
+              }} 
+            />
 
             <p style={{ color: COLORS.textMuted, fontSize: 12, margin: "0 0 6px" }}>Split Type</p>
             <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
@@ -118,7 +144,7 @@ export function SplitScreen({ onNav, appState, appActions }) {
               <div style={{ background: "rgba(0,0,0,0.02)", borderRadius: 10, padding: 12, marginBottom: 16, border: `1px solid ${COLORS.border}` }}>
                 <p style={{ color: COLORS.text, fontSize: 13, fontWeight: 700, margin: "0 0 12px" }}>Enter {splitType === "percentage" ? "Percentages" : "Exact Amounts"}</p>
                 {selectedContacts.map(id => {
-                  const c = id === "RK" ? { name: "You (RK)", color: COLORS.blue } : CONTACTS.find(x => x.id === id);
+                  const c = id === "RK" ? { name: "You (RK)", color: COLORS.blue } : contacts.find(x => x.id === id);
                   return (
                     <div key={id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -175,7 +201,7 @@ export function SplitScreen({ onNav, appState, appActions }) {
             <div style={{ display: "flex", gap: -8, marginBottom: 10 }}>
               {g.ids.map((id, i) => (
                 <div key={id} style={{ marginLeft: i > 0 ? -8 : 0 }}>
-                  <Avatar id={id} color={CONTACTS.find(c => c.id === id)?.color || COLORS.blue} size={30} />
+                  <Avatar id={id} color={contacts.find(c => c.id === id)?.color || COLORS.blue} size={30} />
                 </div>
               ))}
               {g.members > g.ids.length && (

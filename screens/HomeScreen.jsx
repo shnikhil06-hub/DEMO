@@ -1,10 +1,31 @@
-import React from 'react';
-import { COLORS, CONTACTS } from '../constants';
+import React, { useState } from 'react';
+import { COLORS } from '../constants';
 import { Avatar } from '../components/Avatar';
 import { StatusBar } from '../components/StatusBar';
 
 export function HomeScreen({ onNav, appState }) {
-  const { owed, owe, activeLoans, recentActivity } = appState;
+  const { owed, owe, activeLoans, recentActivity, contacts, splitGroups = [] } = appState;
+  const [loanTab, setLoanTab] = useState("lent");
+
+  const lentLoans = activeLoans.filter(l => l.type === "lent");
+  const borrowLoans = activeLoans.filter(l => l.type === "borrowed");
+  
+  const owedToMePeopleCount = new Set([
+    ...lentLoans.map(l => l.id),
+    ...splitGroups.flatMap(g => g.ids.filter(id => id !== "RK"))
+  ]).size;
+
+  const owedSub = owed > 0 ? `${owedToMePeopleCount} people` : "No dues";
+
+  let dueSub = "No dues";
+  if (owe > 0) {
+    if (borrowLoans.length > 0) {
+      const minTenure = Math.min(...borrowLoans.map(l => l.tenure || 7));
+      dueSub = `Due in ${minTenure} days`;
+    } else {
+      dueSub = "No active loans";
+    }
+  }
   return (
     <div style={{ paddingBottom: 80 }}>
       {/* Header */}
@@ -35,8 +56,8 @@ export function HomeScreen({ onNav, appState }) {
         {/* Balance row */}
         <div style={{ display: "flex", gap: 12, marginBottom: 16 }}>
           {[
-            { label: "YOU'RE OWED", amount: `₹${owed.toLocaleString()}`, sub: "3 people", color: COLORS.green },
-            { label: "YOU OWE", amount: `₹${owe.toLocaleString()}`, sub: "Due in 5 days", color: COLORS.accent },
+            { label: "YOU'RE OWED", amount: `₹${owed.toLocaleString()}`, sub: owedSub, color: COLORS.green },
+            { label: "YOU OWE", amount: `₹${owe.toLocaleString()}`, sub: dueSub, color: COLORS.accent },
           ].map(b => (
             <div key={b.label} style={{
               flex: 1, background: "rgba(255,255,255,0.1)", borderRadius: 12,
@@ -93,19 +114,35 @@ export function HomeScreen({ onNav, appState }) {
         </div>
       </div>
 
-      {/* Active Loans */}
+      {/* Active Loans & Borrows */}
       <div style={{ padding: "20px 16px 0" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-          <h3 style={{ color: COLORS.text, margin: 0, fontSize: 16, fontWeight: 700 }}>Active Loans</h3>
+          <div style={{ display: "flex", background: "rgba(0,0,0,0.05)", borderRadius: 8, padding: 2 }}>
+            <button onClick={() => setLoanTab("lent")} style={{
+              background: loanTab === "lent" ? COLORS.blue : "transparent",
+              color: loanTab === "lent" ? "#fff" : COLORS.textMuted,
+              border: "none", borderRadius: 6, padding: "6px 12px", fontSize: 13, fontWeight: 700, cursor: "pointer"
+            }}>Money Lent</button>
+            <button onClick={() => setLoanTab("borrowed")} style={{
+              background: loanTab === "borrowed" ? COLORS.blue : "transparent",
+              color: loanTab === "borrowed" ? "#fff" : COLORS.textMuted,
+              border: "none", borderRadius: 6, padding: "6px 12px", fontSize: 13, fontWeight: 700, cursor: "pointer"
+            }}>Money Borrowed</button>
+          </div>
           <span style={{ color: COLORS.blue, fontSize: 13 }}>See all →</span>
         </div>
-        {activeLoans.map(l => (
+        {activeLoans.filter(l => l.type === loanTab).length === 0 && (
+          <div style={{ padding: "20px", textAlign: "center", color: COLORS.textMuted, fontSize: 13 }}>
+            No active {loanTab === "lent" ? "loans" : "borrows"}.
+          </div>
+        )}
+        {activeLoans.filter(l => l.type === loanTab).map(l => (
           <div key={l.id} style={{
             background: COLORS.card, borderRadius: 14, padding: "14px 16px",
             marginBottom: 10, border: `1px solid ${COLORS.border}`,
           }}>
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <Avatar id={l.id} color={CONTACTS.find(c => c.id === l.id)?.color || COLORS.blue} size={40} />
+              <Avatar id={l.id} color={contacts.find(c => c.id === l.id)?.color || COLORS.blue} size={40} />
               <div style={{ flex: 1 }}>
                 <div style={{ display: "flex", justifyContent: "space-between" }}>
                   <span style={{ color: COLORS.text, fontWeight: 600, fontSize: 14 }}>{l.name}</span>
@@ -113,7 +150,7 @@ export function HomeScreen({ onNav, appState }) {
                 </div>
                 <div style={{ display: "flex", justifyContent: "space-between", marginTop: 2 }}>
                   <span style={{ color: COLORS.textMuted, fontSize: 12 }}>{l.sub}</span>
-                  <span style={{ color: l.badgeColor, fontSize: 12, fontWeight: 600 }}>{l.badge}</span>
+                  <span style={{ color: l.badgeColor, fontSize: 12, fontWeight: 600 }}>{l.tenure ? `Due in ${l.tenure} days` : l.badge}</span>
                 </div>
               </div>
             </div>

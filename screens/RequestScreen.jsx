@@ -1,15 +1,18 @@
 import React, { useState } from 'react';
-import { COLORS, CONTACTS } from '../constants';
+import { COLORS } from '../constants';
 import { StatusBar } from '../components/StatusBar';
+import { AddContactModal } from '../components/AddContactModal';
 
-export function RequestScreen({ onNav, appActions }) {
+export function RequestScreen({ onNav, appState, appActions }) {
+  const { contacts } = appState;
   const [selected, setSelected] = useState("PS");
   const [amount, setAmount] = useState("");
   const [purpose, setPurpose] = useState("");
   const [tenure, setTenure] = useState(7);
   const [sent, setSent] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const contact = CONTACTS.find(c => c.id === selected);
+  const contact = contacts.find(c => c.id === selected) || contacts[0];
   const tenureDays = [1, 3, 5, 7, 14, 30];
   const repayDate = new Date();
   repayDate.setDate(repayDate.getDate() + tenure);
@@ -62,11 +65,11 @@ export function RequestScreen({ onNav, appActions }) {
         {/* Contact Picker */}
         <div style={{ background: COLORS.card, borderRadius: 14, padding: 16, marginBottom: 12, border: `1px solid ${COLORS.border}` }}>
           <p style={{ color: COLORS.textMuted, fontSize: 13, margin: "0 0 12px" }}>Who are you borrowing from?</p>
-          <div style={{ display: "flex", justifyContent: "space-around" }}>
-            {CONTACTS.map(c => (
+          <div style={{ display: "flex", overflowX: "auto", gap: 12, paddingBottom: 8 }} className="hide-scroll">
+            {contacts.map(c => (
               <button key={c.id} onClick={() => setSelected(c.id)} style={{
                 background: "none", border: "none", cursor: "pointer",
-                display: "flex", flexDirection: "column", alignItems: "center", gap: 6,
+                display: "flex", flexDirection: "column", alignItems: "center", gap: 6, flexShrink: 0
               }}>
                 <div style={{
                   width: 48, height: 48, borderRadius: "50%", background: c.color,
@@ -78,8 +81,29 @@ export function RequestScreen({ onNav, appActions }) {
                 <span style={{ color: selected === c.id ? COLORS.blue : COLORS.textMuted, fontSize: 11, fontWeight: selected === c.id ? 700 : 500 }}>{c.name}</span>
               </button>
             ))}
+            <button onClick={() => setIsModalOpen(true)} style={{
+              background: "none", border: "none", cursor: "pointer",
+              display: "flex", flexDirection: "column", alignItems: "center", gap: 6, flexShrink: 0
+            }}>
+              <div style={{
+                width: 48, height: 48, borderRadius: "50%", background: COLORS.border,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: 24, fontWeight: 500, color: COLORS.textMuted,
+              }}>+</div>
+              <span style={{ color: COLORS.textMuted, fontSize: 11, fontWeight: 500 }}>Add</span>
+            </button>
           </div>
         </div>
+
+        <AddContactModal 
+          isOpen={isModalOpen} 
+          onClose={() => setIsModalOpen(false)} 
+          onSave={(name, phone) => {
+            const newC = appActions.onAddContact(name, phone);
+            if (newC) setSelected(newC.id);
+            setIsModalOpen(false);
+          }} 
+        />
 
         {/* Amount */}
         <div style={{ background: COLORS.card, borderRadius: 14, padding: 16, marginBottom: 12, border: `1px solid ${COLORS.border}` }}>
@@ -167,7 +191,7 @@ export function RequestScreen({ onNav, appActions }) {
         <button 
           disabled={!amount}
           onClick={() => {
-            appActions.onRequest(contact, amount, purpose);
+            appActions.onRequest(contact, amount, purpose, tenure);
             setSent(true);
           }}
           style={{ width: "100%", padding: 16, borderRadius: 14, border: "none", background: amount ? COLORS.blue : COLORS.textDim, color: "#fff", fontSize: 16, fontWeight: 700, cursor: amount ? "pointer" : "not-allowed" }}>
